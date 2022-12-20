@@ -24,7 +24,7 @@ Files <- as.data.frame(list.files(path=Folders[1:length(Folders)],full.names = T
 
 #create lists of files of certain types (offering, issuers, etc)
 SUBMISSION <-list.files(path=Folders[1-length(Folders)],full.names = TRUE,pattern="FORM_C_SUBMISSION.tsv")
-INFORMATION <- list.files(path=Folders[1-length(Folders)],full.names = TRUE,pattern="FORM_C_ISSUER_INFORMATION.tsv")
+ISSUER <- list.files(path=Folders[1-length(Folders)],full.names = TRUE,pattern="FORM_C_ISSUER_INFORMATION.tsv")
 JURISDICTIONS <- list.files(path=Folders[1-length(Folders)],full.names = TRUE,pattern="FORM_C_ISSUER_JURISDICTIONS.tsv")
 DISCLOSURE <- list.files(path=Folders[1-length(Folders)],full.names = TRUE,pattern="FORM_C_DISCLOSURE.tsv")
 SIGNATURE <- list.files(path=Folders[1-length(Folders)],full.names = TRUE,pattern="FORM_C_SIGNATURE.tsv")
@@ -33,7 +33,7 @@ ISSUER_SIGNATURE <- list.files(path=Folders[1-length(Folders)],full.names = TRUE
 
 #import the data from each of these files, placing them in a large list of data frames
 SUBMISSION.DATA <- lapply(SUBMISSION,read.csv,sep = '\t')
-INFORMATION.DATA <- lapply(INFORMATION,read.csv,sep = '\t')
+ISSUER.DATA <- lapply(ISSUER,read.csv,sep = '\t')
 JURISDICTIONS.DATA <- lapply(JURISDICTIONS,read.csv,sep = '\t')
 DISCLOSURE.DATA <- lapply(DISCLOSURE,read.csv,sep = '\t')
 SIGNATURE.DATA <- lapply(SIGNATURE,read.csv,sep = '\t')
@@ -41,22 +41,32 @@ ISSUER_SIGNATURE.DATA <- lapply(ISSUER_SIGNATURE,read.csv,sep = '\t')
 
 #for each type of file, combine the files into larger ones, eventually having only 6 very long dataframes
 SUBMISSION.MASTER<-do.call("rbind",SUBMISSION.DATA)
-INFORMATION.MASTER<-do.call("rbind",INFORMATION.DATA)
+ISSUER.MASTER<-do.call("rbind",ISSUER.DATA)
 JURISDICTIONS.MASTER<-do.call("rbind",JURISDICTIONS.DATA)
 DISCLOSURE.MASTER<-do.call("rbind",DISCLOSURE.DATA)
 SIGNATURE.MASTER<-do.call("rbind",SIGNATURE.DATA)
 ISSUER_SIGNATURE.MASTER<-do.call("rbind",ISSUER_SIGNATURE.DATA)
 
-#create csv files of the combined data frames
+#put all the master data table names into a list
+df_list <- list(SUBMISSION.MASTER,ISSUER.MASTER,JURISDICTIONS.MASTER,DISCLOSURE.MASTER,SIGNATURE.MASTER,ISSUER_SIGNATURE.MASTER)
+
+#combine all into one master dataframe, and also make a smaller merged dataframe of just SUBMISSION & ISSUER
+MERGED.MASTER <- Reduce(function(x, y) merge(x, y, all=TRUE), df_list)
+FILINGS <- merge(SUBMISSION.MASTER,ISSUER.MASTER)
+
+#comb out all but the Form Cs
+FORMC.MASTER <- FILINGS[FILINGS$SUBMISSION_TYPE == 'C',]
+
+#create csv files of the combined dataframes
 write.csv(SUBMISSION.MASTER,"SUBMISSION.MASTER.csv",row.names=FALSE)
-write.csv(INFORMATION.MASTER,"ISSUERS.MASTER.csv",row.names=FALSE)
-write.csv(JURISDICTIONS.MASTER,"OFFERING.MASTER.csv",row.names=FALSE)
-write.csv(DISCLOSURE.MASTER,"RECIPIENTS.MASTER.csv",row.names=FALSE)
+write.csv(ISSUER.MASTER,"ISSUER.MASTER.csv",row.names=FALSE)
+write.csv(JURISDICTIONS.MASTER,"JURISDICTION.MASTER.csv",row.names=FALSE)
+write.csv(DISCLOSURE.MASTER,"DISCLOSURE.MASTER.csv",row.names=FALSE)
 write.csv(SIGNATURE.MASTER,"RELATEDPERSONS.MASTER.csv",row.names=FALSE)
 write.csv(ISSUER_SIGNATURE.MASTER,"SIGNATURES.MASTER.csv",row.names=FALSE)
 
+#create csv file of the master form C data 
+write.csv(FORMC.MASTER,"FORMC.MASTER.csv",row.names = FALSE)
 
 summary(SUBMISSION.MASTER)
-
-
-#focus on Honeycomb, 
+summary(FORMC.MASTER)
